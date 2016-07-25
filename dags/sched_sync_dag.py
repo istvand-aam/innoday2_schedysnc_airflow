@@ -40,14 +40,18 @@ task_create_schedules = PythonOperator(
 # result: schedules (SPL-startdatetime-screenid) on the device
 task_send_schedules_to_screen = SimpleHttpOperator(
     task_id='send_schedules_to_screen',
-    endpoint='127.0.0.1',
+    http_conn_id='screen_server',
+    endpoint='api/schedules',
+    headers={"Content-Type": "application/json"},
     dag=SchedSyncDAG
 )
 
 # result: clean slate on the (sms of the) screen - no schedules
 task_cleanup_previous_schedules = SimpleHttpOperator(
     task_id='cleanup_schedules',
-    endpoint='127.0.0.1',
+    http_conn_id='screen_server',
+    endpoint='api/schedules/clear',
+    method='GET',
     dag=SchedSyncDAG
 )
 
