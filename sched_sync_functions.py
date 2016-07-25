@@ -1,8 +1,10 @@
 # Python functions used by Sched Sync DAG are here
 
 from datetime import datetime, timedelta
+import json
 from uuid import uuid4
 
+import requests
 from faker_cinema import FakerCinema
 
 TODAY = datetime.today()
@@ -14,23 +16,25 @@ CREDENTIALS = {
     'password': 'admin'
 }
 
+FAKER = FakerCinema()
+
 
 CONTENT = (
     {
         'id': uuid4(),
-        'title': FakerCinema.cpl_name(),
+        'title': FAKER.cpl_name(),
         'duration': 7200,
         'framerate': 48
     },
     {
         'id': uuid4(),
-        'title': FakerCinema.cpl_name(),
+        'title': FAKER.cpl_name(),
         'duration': 7200,
         'framerate': 48
     },
     {
         'id': uuid4(),
-        'title': FakerCinema.cpl_name(),
+        'title': FAKER.cpl_name(),
         'duration': 7200,
         'framerate': 48
     },
@@ -64,5 +68,12 @@ def create_schedules():
     # content and schedules are matched up 1:1 ATM;
     # as soon as this isn't the case, we have to match them by title or something...
     return ({'uuid': '', 'name': '', 'start': '', 'end': '', 'playlist': ()})
+
+
+def send_schedules_to_screen(**kwargs):  # hope it's op_kwargs + context
+    data = json.dumps(kwargs['task_instance'].xcom_pull(task_ids='create_schedules'))
+    http = HTTPHook(kwargs['method'], http_conn_id=kwargs['http_conn_id'])
+    target = "/".join((kwargs['http_conn_id'], kwargs['endpoint']))  # may need better joining
+    return http.run(target, data, kwargs['headers'])  # response_check from operator could be better
 
 

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators import PythonOperator, SimpleHttpOperator
 # you need to add stuff to pythonpath :(
-from sched_sync_functions import pull_pos_feed, create_playlists, create_schedules, cleanup_schedules
+from sched_sync_functions import pull_pos_feed, create_playlists, create_schedules, send_schedules_to_screen
 
 MANANA = (datetime.now() + timedelta(days=1))
 
@@ -38,11 +38,16 @@ task_create_schedules = PythonOperator(
 )
 
 # result: schedules (SPL-startdatetime-screenid) on the device
-task_send_schedules_to_screen = SimpleHttpOperator(
+task_send_schedules_to_screen = PythonOperator(
     task_id='send_schedules_to_screen',
-    http_conn_id='screen_server',
-    endpoint='api/schedules',
-    headers={"Content-Type": "application/json"},
+    python_callable=send_schedules_to_screen,
+    provide_context=True,
+    op_kwargs=dict(
+        http_conn_id='screen_server',
+        endpoint='api/schedules',
+        headers={"Content-Type": "application/json"},
+        method='POST'
+    ),
     dag=SchedSyncDAG
 )
 
