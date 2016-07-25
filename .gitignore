@@ -7,3 +7,6 @@
 # bytecode cache
 __pycache__
 *.pyc
+
+# schedule cache json
+schedules.json

@@ -1,7 +1,7 @@
 import json
 import os
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect
 
 
 app = Flask(__name__, template_folder='.')
@@ -49,4 +49,9 @@ def clear_schedules():
 
 @app.route('/')
 def index():
+    return redirect('/schedules')
+
+
+@app.route('/schedules')
+def schedules_page():
     return render_template('schedules.html', schedules=SCHEDULES)
