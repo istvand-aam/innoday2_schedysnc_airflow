@@ -4,8 +4,10 @@ from datetime import datetime, timedelta
 import json
 from uuid import uuid4
 
-import requests
 from faker_cinema import FakerCinema
+
+from airflow.hooks.http_hook import HttpHook
+
 
 TODAY = datetime.today()
 
@@ -65,20 +67,26 @@ def _create_playlist():
     return [cpl_generator() for _ in xrange(PLAYLIST_LEN)]
 
 
-def create_schedules():
+def create_schedules(**kwargs):
     # gather the playlists and put them into the sessions parsed from POS
     # content and schedules are matched up 1:1 ATM;
     # as soon as this isn't the case, we have to match them by title or
     # something...
+
+    # get playlists and pos data from xcom
+    playlists, pos_schedules = json.dumps(
+        kwargs['task_instance'].xcom_pull(
+            task_ids=['create_playlists', 'pull_pos_feed']
+        )
+    )
     return [
         {
             'uuid': uuid4(),
             'name': _schedule_name(pos_schedule['start_stamp']),
             'start': pos_schedule['start_stamp'],
             'end': pos_schedule['end_stamp'],
-            'playlist': playlists[i]  # TODO: get var from input
+            'playlist': playlists[i]
         }
-        # TODO: get var from input
         for i, pos_schedule in enumerate(pos_schedules)
     ]
 
@@ -90,8 +98,6 @@ def _schedule_name(start_ts):
 
 def send_schedules_to_screen(**kwargs):  # hope it's op_kwargs + context
     data = json.dumps(kwargs['task_instance'].xcom_pull(task_ids='create_schedules'))
-    http = HTTPHook(kwargs['method'], http_conn_id=kwargs['http_conn_id'])
+    http = HttpHook(kwargs['method'], http_conn_id=kwargs['http_conn_id'])
     target = "/".join((kwargs['http_conn_id'], kwargs['endpoint']))  # may need better joining
     return http.run(target, data, kwargs['headers'])  # response_check from operator could be better
-
-
