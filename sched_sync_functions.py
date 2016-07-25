@@ -1,7 +1,10 @@
 # Python functions used by Sched Sync DAG are here
+
 from datetime import datetime, timedelta
+import json
 from uuid import uuid4
 
+import requests
 from faker_cinema import FakerCinema
 
 TODAY = datetime.today()
@@ -13,12 +16,14 @@ CREDENTIALS = {
     'password': 'admin'
 }
 
+FAKER = FakerCinema()
+
 
 def cpl_generator():
     while True:
         yield {
             'id': uuid4(),
-            'title': FakerCinema.cpl_name(),
+            'title': FAKER.cpl_name(),
             'duration': 7200,
             'framerate': 48
         }
@@ -81,3 +86,12 @@ def create_schedules():
 def _schedule_name(start_ts):
     start_dt = datetime.fromtimestamp(start_ts)
     return 'schedule_{}:{}'.format(start_dt.hour, start_dt.minute)
+
+
+def send_schedules_to_screen(**kwargs):  # hope it's op_kwargs + context
+    data = json.dumps(kwargs['task_instance'].xcom_pull(task_ids='create_schedules'))
+    http = HTTPHook(kwargs['method'], http_conn_id=kwargs['http_conn_id'])
+    target = "/".join((kwargs['http_conn_id'], kwargs['endpoint']))  # may need better joining
+    return http.run(target, data, kwargs['headers'])  # response_check from operator could be better
+
+
