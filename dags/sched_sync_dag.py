@@ -6,10 +6,14 @@ from sched_sync_functions import pull_pos_feed, create_playlists, create_schedul
 
 MANANA = (datetime.now() + timedelta(days=1))
 
-SchedSyncDAG = DAG('Fake_Schedule_Sync', default_args={
-    'start_date': MANANA,
+SchedSyncDAG = DAG('Fake_Schedule_Sync',
+    schedule_interval=timedelta(10),
+    start_date=datetime.now() + timedelta(seconds=20),
+    default_args={
+    'start_date': datetime.now() + timedelta(seconds=20),
     'owner': 'TMS'
-})
+    }
+)
 
 # let's try with Python and HTTP operators
 
@@ -32,12 +36,15 @@ task_create_playlists = PythonOperator(
 # result: schedules (shows) with assigned SPLs
 task_create_schedules = PythonOperator(
     task_id='create_schedules',
+    provide_context=True,
     python_callable=create_schedules,
     op_kwargs={},
     dag=SchedSyncDAG
 )
 
 # result: schedules (SPL-startdatetime-screenid) on the device
+# needed to add this as PythonOp instead of HTTP because data needs to be passed through via XCom
+# and HTTPOperator cannot receive stuff easily (as we know Airflow now:)
 task_send_schedules_to_screen = PythonOperator(
     task_id='send_schedules_to_screen',
     python_callable=send_schedules_to_screen,
