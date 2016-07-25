@@ -4,9 +4,12 @@ from airflow.operators import PythonOperator, SimpleHttpOperator
 # you need to add stuff to pythonpath :(
 from sched_sync_functions import pull_pos_feed, create_playlists, create_schedules, cleanup_schedules
 
-SchedSyncDAG = DAG('Fake_Schedule_Sync')  # TODO default args?
-
 MANANA = (datetime.now() + timedelta(days=1))
+
+SchedSyncDAG = DAG('Fake_Schedule_Sync', default_args={
+    'start_date': MANANA,
+    'owner': 'TMS'
+})
 
 # let's try with Python and HTTP operators
 
@@ -14,7 +17,6 @@ MANANA = (datetime.now() + timedelta(days=1))
 task_pull_pos_feed = PythonOperator(
     task_id='pull_pos_feed',
     python_callable=pull_pos_feed,
-    start_date=MANANA,
     op_kwargs={},
     dag=SchedSyncDAG
 )
@@ -23,7 +25,6 @@ task_pull_pos_feed = PythonOperator(
 task_create_playlists = PythonOperator(
     task_id='create_playlist',
     python_callable=create_playlists,
-    start_date=MANANA,
     op_kwargs={},
     dag=SchedSyncDAG
 )
@@ -32,7 +33,6 @@ task_create_playlists = PythonOperator(
 task_create_schedules = PythonOperator(
     task_id='create_schedules',
     python_callable=create_schedules,
-    start_date=MANANA,
     op_kwargs={},
     dag=SchedSyncDAG
 )
@@ -41,7 +41,6 @@ task_create_schedules = PythonOperator(
 task_send_schedules_to_screen = SimpleHttpOperator(
     task_id='send_schedules_to_screen',
     endpoint='127.0.0.1',
-    start_date=MANANA,
     dag=SchedSyncDAG
 )
 
@@ -49,7 +48,6 @@ task_send_schedules_to_screen = SimpleHttpOperator(
 task_cleanup_previous_schedules = SimpleHttpOperator(
     task_id='cleanup_schedules',
     endpoint='127.0.0.1',
-    start_date=MANANA,
     dag=SchedSyncDAG
 )
 
