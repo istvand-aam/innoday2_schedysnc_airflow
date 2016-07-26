@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta
 import json
+import logging
 from uuid import uuid4
 
 from faker_cinema import FakerCinema
@@ -22,13 +23,14 @@ FAKER = FakerCinema()
 
 
 def cpl_generator():
-    while True:
-        yield {
-            'id': str(uuid4()),
-            'title': FAKER.cpl_name(),
-            'duration': 7200,
-            'framerate': 48
-        }
+    # airflow uses deepcopy probably or something that doesn't play well with generators
+    # so it's not a generator now
+    return {
+        'id': str(uuid4()),
+        'title': FAKER.cpl_name(),
+        'duration': 7200,
+        'framerate': 48
+    }
 
 PLAYLIST_LEN = 10
 
@@ -74,11 +76,12 @@ def create_schedules(**kwargs):
     # something...
 
     # get playlists and pos data from xcom
-    playlists, pos_schedules = json.dumps(
-        kwargs['task_instance'].xcom_pull(
+    playlists, pos_schedules = kwargs['task_instance'].xcom_pull(
             task_ids=['create_playlists', 'pull_pos_feed']
         )
-    )
+    logging.info('values from unpack')
+    logging.info(playlists)
+    logging.info(pos_schedules)
     return [
         {
             'uuid': str(uuid4()),
@@ -99,5 +102,4 @@ def _schedule_name(start_ts):
 def send_schedules_to_screen(**kwargs):  # hope it's op_kwargs + context
     data = json.dumps(kwargs['task_instance'].xcom_pull(task_ids='create_schedules'))
     http = HttpHook(kwargs['method'], http_conn_id=kwargs['http_conn_id'])
-    target = "/".join((kwargs['http_conn_id'], kwargs['endpoint']))  # may need better joining
-    return http.run(target, data, kwargs['headers'])  # response_check from operator could be better
+    return http.run(kwargs['endpoint'], data, kwargs['headers'])  # response_check from operator is on by default, I guess

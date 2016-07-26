@@ -27,7 +27,7 @@ task_pull_pos_feed = PythonOperator(
 
 # result: SPLs with content
 task_create_playlists = PythonOperator(
-    task_id='create_playlist',
+    task_id='create_playlists',
     python_callable=create_playlists,
     op_kwargs={},
     dag=SchedSyncDAG
