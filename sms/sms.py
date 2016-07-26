@@ -29,7 +29,7 @@ _load_schedules_cache()
 @app.route('/api/schedules', methods=('POST',))
 def save_schedule():
     schedule_data = request.json
-    SCHEDULES.append(schedule_data)
+    SCHEDULES.extend(schedule_data)
     _cache_schedules()
     return jsonify(message='SUCCESS', schedule=schedule_data)
 
